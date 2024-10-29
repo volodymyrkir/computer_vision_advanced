@@ -3,6 +3,7 @@ import cv2
 import typing as tp
 from skimage.filters import gaussian
 
+
 def hough_coordinates(
     image: np.ndarray,
     rho: int | float = 1,
@@ -59,6 +60,7 @@ def hough_coordinates(
     polar_coordinates = np.vstack([detected_rho, detected_theta]).T
     return polar_coordinates
 
+
 def polar2cartesian(radius: np.ndarray, angle: np.ndarray) -> np.ndarray:
     """
     Converts candidate points to line parameters in cartesian space
@@ -71,6 +73,7 @@ def polar2cartesian(radius: np.ndarray, angle: np.ndarray) -> np.ndarray:
         points of intersection between encoded line and normal from the center of coordinates
     """
     return radius * np.array([np.cos(angle), np.sin(angle)])
+
 
 def clusterize_coordinates(
     coordinates: np.ndarray,
@@ -227,6 +230,7 @@ def hough(
 
     coordinates = hough_coordinates(image, rho, theta, threshold)
     return coordinates_to_lines(image, coordinates, rho, theta, overlap_threshold, min_line_length, max_line_gap)
+
 
 def hough_cv(
     image: np.ndarray,
