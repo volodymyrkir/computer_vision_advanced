@@ -5,7 +5,7 @@ import random
 from skimage.draw import line
 from PIL import Image
 
-from lab_1.consts import (
+from consts import (
     DEFAULT_LINE_WIDTH, DEFAULT_LINE_LENGTH, IMAGE_SIZE,
     BASE_AMOUNT_OF_LINES, INTERSECTION_PROB, OUTPUT_NAME,
     MAX_NOISE_LEVEL
