@@ -26,12 +26,13 @@ def hough_coordinates(
     """
 
     diagonal = np.linalg.norm(np.array(image.shape))
-    angles = np.arange(-np.pi/2, np.pi/2, theta)
-    rho_values = np.arange(-diagonal, diagonal, rho)
-
+    
     width, height = 2 * diagonal, np.pi
-    rho_steps = int(width / rho)
-    theta_steps = int(height / theta)
+    rho_steps = int(width // rho)
+    theta_steps = int(height // theta)
+    
+    angles = np.arange(-np.pi/2, np.pi/2, theta)[:theta_steps]
+    rho_values = np.arange(-diagonal, diagonal, rho)[:rho_steps]
 
     accumulator = np.zeros([rho_steps, theta_steps])    
 
@@ -146,17 +147,29 @@ def coordinates_to_lines(
 
     lines = []
 
-    if len(coordinates.shape) == 1:
+    if len(coordinates.shape) == 0:
+        return []
+    elif len(coordinates.shape) == 1:
         coordinates = coordinates[None, ...]
 
     coordinates = clusterize_coordinates(coordinates, rho, theta, overlap_threshold)
     image_averaged = (gaussian(image * 255, 3) > 0.15).T
 
     for rho, theta in coordinates:
+        if theta == 0:
+            # Implies sin(theta) is also 0 => NaNs during division
+            continue
+
         pt0 = polar2cartesian(rho, theta)
 
         direction = np.array([-pt0[1], pt0[0]])
-        direction = direction / np.linalg.norm(direction)
+        direction_norm = np.linalg.norm(direction)
+
+        if direction_norm == 0:
+            # NaNs during division
+            continue
+
+        direction = direction / direction_norm
 
         xs = np.arange(image.shape[0])
         ys = -(np.cos(theta)/np.sin(theta)) * xs + rho / np.sin(theta)
@@ -261,4 +274,36 @@ def hough_cv(
     coordinates = cv2.HoughLines(image, rho=rho, theta=theta, threshold=threshold)    
     coordinates = np.squeeze(coordinates)
     return coordinates_to_lines(image, coordinates, rho, theta, overlap_threshold, min_line_length, max_line_gap)
+
+def hough_cv_p(
+    image: np.ndarray,
+    rho: int | float = 1,
+    theta: int | float = np.pi/180,
+    threshold: int | float = 60,
+    overlap_threshold: int | float = 5,
+    min_line_length: int | float = 50,
+    max_line_gap: int | float = 5,
+) -> np.ndarray:
+    """
+    Performs probabilistic hough transform from cv2 module
+
+    Args:
+        image: numpy array of pixel intensities
+        rho: size of accumulated array cell on rho axis
+        theta: size of accumulated array cell on theta axis 
+        threshold: threshold to consider the activated cell a candidate
+        overlap_threshold: delta (in accumulator cell sides) that is considered an overlap, used for interface compatibility
+        min_line_length: minimal acceptable size of the line segment, used when segment bounds are calculated
+        max_line_gap: maximal gap that can be considered an inconsistency rather than end of the segment
+    
+    Returns:
+        Array of coordinates that describe ends of line segments found in the image
+    """
+
+    lines = cv2.HoughLinesP(image, rho=rho, theta=theta, threshold=threshold, minLineLength=min_line_length, maxLineGap=max_line_gap)
+
+    if lines is not None:
+        lines = lines[:, 0, :]
+
+    return lines
 
