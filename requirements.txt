@@ -6,3 +6,4 @@ opencv-python
 jupyter
 pandas
 plotly
+scikit-learn
